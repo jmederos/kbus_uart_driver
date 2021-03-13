@@ -20,14 +20,15 @@
 // #define QUEUE_DEBUG
 
 /**
- ** Pin numbers from Sparkfun ESP32 MicroMod Schematic
- ** https://cdn.sparkfun.com/assets/2/2/5/9/5/MicroMod_ESP32_Schematic.pdf
+ ** Pin numbers for kbus-featherwing
+ ** https://github.com/jmederos/esp32-r50-kbus/tree/hardware
  */
-#define TXD_PIN (GPIO_NUM_17)
-#define RXD_PIN (GPIO_NUM_16)
-#define ENABLE_PIN (GPIO_NUM_14)
+#define TXD_PIN (GPIO_NUM_17)       // TX
+#define RXD_PIN (GPIO_NUM_16)       // RX
+#define ENABLE_PIN (GPIO_NUM_21)
+#define FAULT_PIN (GPIO_NUM_33)
 #define DRIVER_UART UART_NUM_2
-#define LED_PIN (GPIO_NUM_2)
+#define LED_PIN (GPIO_NUM_13)
 
 #define HERTZ(hz) ((1000/hz)/portTICK_RATE_MS)
 #define SECONDS(sec) ((sec*1000) / portTICK_RATE_MS)
@@ -85,12 +86,6 @@ void init_kbus_uart_driver(QueueHandle_t rx_queue, QueueHandle_t tx_queue) {
     // Make sure we're in standard uart mode
     ESP_ERROR_CHECK(uart_set_mode(DRIVER_UART, UART_MODE_UART));
 
-    //* Doesn't work as expected **********************************
-    // Write some data to tx line so it's not in a dominant state
-    //// char kbus_init_byte = 0x00;
-    //// kbus_send_bytes("kbus-tx-init", &kbus_init_byte, 1);
-    // ************************************************************
-
     // Create RX and TX task loops
     ESP_LOGI(TAG, "Creating kbus_uart_driver rx task");
     xTaskCreatePinnedToCore(rx_task, "uart_rx", RX_BUF_SIZE*4, NULL, RX_TASK_PRIORITY, NULL, 1);
@@ -109,8 +104,14 @@ void init_kbus_uart_driver(QueueHandle_t rx_queue, QueueHandle_t tx_queue) {
     ESP_ERROR_CHECK(gpio_set_level(LED_PIN, 0));
 
     // Pull transciever enable pin high so we can listen to all k-bus traffic. (TI SN65HVDA195QDRQ1)
-    ESP_ERROR_CHECK(gpio_set_pull_mode(ENABLE_PIN, GPIO_PULLUP_ONLY));
+    ESP_ERROR_CHECK(gpio_set_direction(ENABLE_PIN, GPIO_MODE_OUTPUT));  // Set as output
+    ESP_ERROR_CHECK(gpio_set_level(ENABLE_PIN, 1));
 
+    // Set FAULT pin as input (MCP2004/MCP2004A)
+    // TODO: Interrupt on falling edge; attempt resend on rising edge
+    ESP_ERROR_CHECK(gpio_set_direction(FAULT_PIN, GPIO_MODE_INPUT));
+    ESP_ERROR_CHECK(gpio_set_pull_mode(FAULT_PIN, GPIO_FLOATING));
+    
 #ifdef QUEUE_DEBUG
     create_uart_queue_watcher();
 #endif
