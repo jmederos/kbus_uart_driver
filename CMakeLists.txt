@@ -1,2 +1,5 @@
-idf_component_register(SRCS "kbus_uart_driver.c"
-                    INCLUDE_DIRS "include")
+idf_component_register(
+    SRCS "kbus_uart_driver.c"
+    REQUIRES esp_driver_uart esp_driver_gpio
+    INCLUDE_DIRS "include"
+    )

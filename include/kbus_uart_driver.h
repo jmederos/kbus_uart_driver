@@ -1,6 +1,10 @@
 #ifndef KBUS_UART_DRIVER_H
 #define KBUS_UART_DRIVER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
     uint8_t body[253];
     uint8_t body_len;
@@ -15,4 +19,9 @@ typedef struct {
  * @param[in] tx_queue  Queue receiving k-bus messages from service handling logic/device emulation
  */
 void init_kbus_uart_driver(QueueHandle_t rx_queue, QueueHandle_t tx_queue);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif //KBUS_UART_DRIVER_H
